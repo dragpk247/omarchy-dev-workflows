@@ -11,55 +11,65 @@ fi
 ACTIVE_ID=$(jq -r '.active_workflow // "ai-assisted"' "$CONFIG_FILE")
 ACTIVE_NAME=$(jq -r --arg id "$ACTIVE_ID" '.workflows[] | select(.id == $id) | .name' "$CONFIG_FILE")
 ACTIVE_ICON=$(jq -r --arg id "$ACTIVE_ID" '.workflows[] | select(.id == $id) | .icon' "$CONFIG_FILE")
+ACTIVE_DESC=$(jq -r --arg id "$ACTIVE_ID" '.workflows[] | select(.id == $id) | .description // ""' "$CONFIG_FILE")
 
 # Collect tools of the active workflow
 mapfile -t TOOL_NAMES < <(jq -r --arg id "$ACTIVE_ID" '.workflows[] | select(.id == $id) | .tools[].name' "$CONFIG_FILE")
 mapfile -t TOOL_ICONS < <(jq -r --arg id "$ACTIVE_ID" '.workflows[] | select(.id == $id) | .tools[].icon' "$CONFIG_FILE")
+mapfile -t TOOL_ACTIONS < <(jq -r --arg id "$ACTIVE_ID" '.workflows[] | select(.id == $id) | .tools[].action' "$CONFIG_FILE")
 
+# Format for omarchy-menu-select: "<glyph>\t<label>\t<subtext>"
+# glyph is displayed as the icon
+# label is the primary title
+# subtext is rendered below and shown on hover/detail
+TAB=$'\t'
 MENU_OPTIONS=()
-MENU_OPTIONS+=("🔄 Switch Workflow (Current: $ACTIVE_ICON $ACTIVE_NAME)")
+MENU_OPTIONS+=("🔄${TAB}Switch Workflow${TAB}Current: $ACTIVE_ICON $ACTIVE_NAME${ACTIVE_DESC:+ — $ACTIVE_DESC}")
 
 for i in "${!TOOL_NAMES[@]}"; do
-    MENU_OPTIONS+=("🚀 Launch: ${TOOL_ICONS[$i]} ${TOOL_NAMES[$i]}")
+    action_preview="${TOOL_ACTIONS[$i]}"
+    MENU_OPTIONS+=("${TOOL_ICONS[$i]}${TAB}Launch: ${TOOL_NAMES[$i]}${TAB}$action_preview")
 done
 
-MENU_OPTIONS+=("➕ Add Tool to Current Workflow")
-MENU_OPTIONS+=("➖ Remove Tool from Current Workflow")
-MENU_OPTIONS+=("🆕 Create New Workflow")
-MENU_OPTIONS+=("🗑️ Delete a Workflow")
-MENU_OPTIONS+=("📝 Edit Workflows JSON File")
+MENU_OPTIONS+=("➕${TAB}Add Tool to Current Workflow${TAB}Add a custom command, script, or application to $ACTIVE_NAME")
+MENU_OPTIONS+=("➖${TAB}Remove Tool from Current Workflow${TAB}Remove a tool from $ACTIVE_NAME")
+MENU_OPTIONS+=("🆕${TAB}Create New Workflow${TAB}Define a completely new dev workflow context")
+MENU_OPTIONS+=("🗑️${TAB}Delete a Workflow${TAB}Remove an existing workflow context")
+MENU_OPTIONS+=("📝${TAB}Edit Workflows JSON File${TAB}Open $CONFIG_FILE directly in editor")
 
-CHOICE=$(omarchy-menu-select "Dev Workflow: $ACTIVE_ICON $ACTIVE_NAME" "${MENU_OPTIONS[@]}")
+# Pass --width 540 to give ample room for labels and full action subtexts
+CHOICE_RAW=$(omarchy-menu-select "Dev Workflow: $ACTIVE_ICON $ACTIVE_NAME" "${MENU_OPTIONS[@]}" -- --width 540)
 
-[ -z "$CHOICE" ] && exit 0
+[ -z "$CHOICE_RAW" ] && exit 0
+
+# When an option has subtext, omarchy-menu-select returns "<label>\t<subtext>"
+CHOICE=$(echo "$CHOICE_RAW" | cut -f1)
 
 case "$CHOICE" in
     *"Switch Workflow"*)
         mapfile -t WF_IDS < <(jq -r '.workflows[].id' "$CONFIG_FILE")
         mapfile -t WF_NAMES < <(jq -r '.workflows[].name' "$CONFIG_FILE")
         mapfile -t WF_ICONS < <(jq -r '.workflows[].icon' "$CONFIG_FILE")
+        mapfile -t WF_DESCS < <(jq -r '.workflows[].description // ""' "$CONFIG_FILE")
         
         SWITCH_OPTIONS=()
         for i in "${!WF_IDS[@]}"; do
-            prefix="  "
-            if [ "${WF_IDS[$i]}" = "$ACTIVE_ID" ]; then
-                prefix="✓ "
-            fi
-            SWITCH_OPTIONS+=("${prefix}${WF_ICONS[$i]} ${WF_NAMES[$i]} (${WF_IDS[$i]})")
+            prefix=""
+            [ "${WF_IDS[$i]}" = "$ACTIVE_ID" ] && prefix="✓ "
+            SWITCH_OPTIONS+=("${WF_ICONS[$i]}${TAB}${prefix}${WF_NAMES[$i]}${TAB}ID: ${WF_IDS[$i]}${WF_DESCS[$i]:+ — ${WF_DESCS[$i]}}")
         done
         
-        SELECTED_WF=$(omarchy-menu-select "Select Dev Workflow to Activate" "${SWITCH_OPTIONS[@]}")
-        if [ -n "$SELECTED_WF" ]; then
-            # Extract id in parentheses
-            TARGET_ID=$(echo "$SELECTED_WF" | sed -n 's/.*(\(.*\))/\1/p')
+        SELECTED_RAW=$(omarchy-menu-select "Select Dev Workflow to Activate" "${SWITCH_OPTIONS[@]}" -- --width 540)
+        if [ -n "$SELECTED_RAW" ]; then
+            SELECTED_DETAIL=$(echo "$SELECTED_RAW" | cut -f2)
+            TARGET_ID=$(echo "$SELECTED_DETAIL" | sed -n 's/^ID: \([^ —]*\).*/\1/p')
             if [ -n "$TARGET_ID" ]; then
                 omarchy-workflow set "$TARGET_ID"
             fi
         fi
         ;;
-    *"Launch:"*)
-        # Extract tool name after "Launch: <icon> "
-        TOOL_NAME=$(echo "$CHOICE" | sed 's/.*Launch: [^ ]* //')
+    *"Launch: "*)
+        TOOL_NAME=$(echo "$CHOICE" | sed 's/^Launch: //')
         ACTION=$(jq -r --arg wfid "$ACTIVE_ID" --arg tname "$TOOL_NAME" \
             '.workflows[] | select(.id == $wfid) | .tools[] | select(.name == $tname) | .action' "$CONFIG_FILE")
         if [ -n "$ACTION" ] && [ "$ACTION" != "null" ]; then
@@ -90,11 +100,11 @@ case "$CHOICE" in
         fi
         RM_OPTIONS=()
         for i in "${!TOOL_NAMES[@]}"; do
-            RM_OPTIONS+=("${TOOL_ICONS[$i]} ${TOOL_NAMES[$i]}")
+            RM_OPTIONS+=("${TOOL_ICONS[$i]}${TAB}${TOOL_NAMES[$i]}${TAB}${TOOL_ACTIONS[$i]}")
         done
-        TOOL_TO_RM=$(omarchy-menu-select "Select Tool to Remove" "${RM_OPTIONS[@]}")
-        if [ -n "$TOOL_TO_RM" ]; then
-            NAME_ONLY=$(echo "$TOOL_TO_RM" | sed 's/^[^ ]* //')
+        TOOL_TO_RM_RAW=$(omarchy-menu-select "Select Tool to Remove" "${RM_OPTIONS[@]}" -- --width 540)
+        if [ -n "$TOOL_TO_RM_RAW" ]; then
+            NAME_ONLY=$(echo "$TOOL_TO_RM_RAW" | cut -f1)
             TMP=$(mktemp)
             jq --arg wfid "$ACTIVE_ID" --arg name "$NAME_ONLY" \
                '(.workflows[] | select(.id == $wfid) | .tools) |= map(select(.name != $name))' \
@@ -126,11 +136,11 @@ case "$CHOICE" in
         mapfile -t DEL_NAMES < <(jq -r '.workflows[].name' "$CONFIG_FILE")
         DEL_OPTIONS=()
         for i in "${!DEL_IDS[@]}"; do
-            DEL_OPTIONS+=("${DEL_NAMES[$i]} (${DEL_IDS[$i]})")
+            DEL_OPTIONS+=("🗑️${TAB}${DEL_NAMES[$i]}${TAB}ID: ${DEL_IDS[$i]}")
         done
-        CHOSEN_DEL=$(omarchy-menu-select "Select Workflow to Delete" "${DEL_OPTIONS[@]}")
-        if [ -n "$CHOSEN_DEL" ]; then
-            DEL_ID=$(echo "$CHOSEN_DEL" | sed -n 's/.*(\(.*\))/\1/p')
+        CHOSEN_DEL_RAW=$(omarchy-menu-select "Select Workflow to Delete" "${DEL_OPTIONS[@]}" -- --width 500)
+        if [ -n "$CHOSEN_DEL_RAW" ]; then
+            DEL_ID=$(echo "$CHOSEN_DEL_RAW" | cut -f2 | sed 's/^ID: //')
             if [ "$DEL_ID" = "$ACTIVE_ID" ]; then
                 notify-send -i dialog-warning "Cannot Delete" "Switch to a different workflow before deleting the active one."
                 exit 0
