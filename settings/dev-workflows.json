@@ -1,0 +1,104 @@
+{
+  "active_workflow": "ai-assisted",
+  "workflows": [
+    {
+      "id": "ai-assisted",
+      "name": "AI-Assisted Prototyping",
+      "icon": "󰚩",
+      "description": "Antigravity, Claude Code, Ollama, Dropdown Kitty",
+      "tools": [
+        {
+          "name": "Antigravity (agy)",
+          "icon": "🤖",
+          "action": "omarchy-launch-or-focus agy 'kitty --title agy -e agy'"
+        },
+        {
+          "name": "Claude Code",
+          "icon": "⚡",
+          "action": "omarchy-launch-or-focus claude 'kitty --title claude -e claude'"
+        },
+        {
+          "name": "Codex CLI",
+          "icon": "💻",
+          "action": "omarchy-launch-or-focus codex 'kitty --title codex -e codex'"
+        },
+        {
+          "name": "Ollama Chat",
+          "icon": "🦙",
+          "action": "setsid kitty --title 'Ollama Chat' -e ollama run llama3 >/dev/null 2>&1 &"
+        },
+        {
+          "name": "Dropdown Scratchpad",
+          "icon": "",
+          "action": "toggle-dropdown-terminal"
+        }
+      ]
+    },
+    {
+      "id": "fullstack-web",
+      "name": "Full-Stack Web & Cloud",
+      "icon": "󰖟",
+      "description": "Neovim, Tmux, Lazygit, Docker, Node/Mise",
+      "tools": [
+        {
+          "name": "Neovim Editor",
+          "icon": "",
+          "action": "omarchy-launch-or-focus nvim 'kitty --title nvim -e nvim'"
+        },
+        {
+          "name": "Tmux Workspace",
+          "icon": "",
+          "action": "omarchy-launch-or-focus tmux-dev 'kitty --title tmux-dev -e tmux new-session -A -s dev'"
+        },
+        {
+          "name": "Lazygit Git Client",
+          "icon": "󰊢",
+          "action": "omarchy-launch-or-focus lazygit 'kitty --title lazygit -e lazygit'"
+        },
+        {
+          "name": "Project Switcher (fzf)",
+          "icon": "",
+          "action": "project-switcher"
+        },
+        {
+          "name": "Docker Status & Containers",
+          "icon": "󰡨",
+          "action": "setsid kitty --title 'Docker Containers' -e bash -c 'docker ps; exec bash' >/dev/null 2>&1 &"
+        }
+      ]
+    },
+    {
+      "id": "systems-performance",
+      "name": "Systems & Performance",
+      "icon": "󰅟",
+      "description": "Rust, Btop, Systemd Logs, Hyprland Config",
+      "tools": [
+        {
+          "name": "Btop System Monitor",
+          "icon": "󰄪",
+          "action": "omarchy-launch-or-focus btop 'kitty --title btop -e btop'"
+        },
+        {
+          "name": "Hyprland Config Editor",
+          "icon": "",
+          "action": "omarchy-launch-or-focus-tui nvim ~/.config/hypr/bindings.lua"
+        },
+        {
+          "name": "Journalctl System Logs",
+          "icon": "📜",
+          "action": "setsid kitty --title 'System Logs' -e journalctl --user -f >/dev/null 2>&1 &"
+        },
+        {
+          "name": "ASUS Power Profile Cycle",
+          "icon": "⚡",
+          "action": "asus-profile-toggle"
+        },
+        {
+          "name": "ASUS Battery Limit Toggle",
+          "icon": "🔋",
+          "action": "asus-battery-toggle"
+        }
+      ]
+    }
+  ]
+}

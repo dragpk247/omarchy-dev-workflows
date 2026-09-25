@@ -1,0 +1,146 @@
+#!/bin/bash
+# omarchy-workflow-menu: Interactive launcher and switcher for Omarchy Dev Workflows
+
+CONFIG_FILE="${XDG_STATE_HOME:-$HOME/.local/state}/omarchy/settings/dev-workflows.json"
+
+if [ ! -f "$CONFIG_FILE" ]; then
+    notify-send -i dialog-error "Dev Workflows" "Settings file not found!"
+    exit 1
+fi
+
+ACTIVE_ID=$(jq -r '.active_workflow // "ai-assisted"' "$CONFIG_FILE")
+ACTIVE_NAME=$(jq -r --arg id "$ACTIVE_ID" '.workflows[] | select(.id == $id) | .name' "$CONFIG_FILE")
+ACTIVE_ICON=$(jq -r --arg id "$ACTIVE_ID" '.workflows[] | select(.id == $id) | .icon' "$CONFIG_FILE")
+
+# Collect tools of the active workflow
+mapfile -t TOOL_NAMES < <(jq -r --arg id "$ACTIVE_ID" '.workflows[] | select(.id == $id) | .tools[].name' "$CONFIG_FILE")
+mapfile -t TOOL_ICONS < <(jq -r --arg id "$ACTIVE_ID" '.workflows[] | select(.id == $id) | .tools[].icon' "$CONFIG_FILE")
+
+MENU_OPTIONS=()
+MENU_OPTIONS+=("🔄 Switch Workflow (Current: $ACTIVE_ICON $ACTIVE_NAME)")
+
+for i in "${!TOOL_NAMES[@]}"; do
+    MENU_OPTIONS+=("🚀 Launch: ${TOOL_ICONS[$i]} ${TOOL_NAMES[$i]}")
+done
+
+MENU_OPTIONS+=("➕ Add Tool to Current Workflow")
+MENU_OPTIONS+=("➖ Remove Tool from Current Workflow")
+MENU_OPTIONS+=("🆕 Create New Workflow")
+MENU_OPTIONS+=("🗑️ Delete a Workflow")
+MENU_OPTIONS+=("📝 Edit Workflows JSON File")
+
+CHOICE=$(omarchy-menu-select "Dev Workflow: $ACTIVE_ICON $ACTIVE_NAME" "${MENU_OPTIONS[@]}")
+
+[ -z "$CHOICE" ] && exit 0
+
+case "$CHOICE" in
+    *"Switch Workflow"*)
+        mapfile -t WF_IDS < <(jq -r '.workflows[].id' "$CONFIG_FILE")
+        mapfile -t WF_NAMES < <(jq -r '.workflows[].name' "$CONFIG_FILE")
+        mapfile -t WF_ICONS < <(jq -r '.workflows[].icon' "$CONFIG_FILE")
+        
+        SWITCH_OPTIONS=()
+        for i in "${!WF_IDS[@]}"; do
+            prefix="  "
+            if [ "${WF_IDS[$i]}" = "$ACTIVE_ID" ]; then
+                prefix="✓ "
+            fi
+            SWITCH_OPTIONS+=("${prefix}${WF_ICONS[$i]} ${WF_NAMES[$i]} (${WF_IDS[$i]})")
+        done
+        
+        SELECTED_WF=$(omarchy-menu-select "Select Dev Workflow to Activate" "${SWITCH_OPTIONS[@]}")
+        if [ -n "$SELECTED_WF" ]; then
+            # Extract id in parentheses
+            TARGET_ID=$(echo "$SELECTED_WF" | sed -n 's/.*(\(.*\))/\1/p')
+            if [ -n "$TARGET_ID" ]; then
+                omarchy-workflow set "$TARGET_ID"
+            fi
+        fi
+        ;;
+    *"Launch:"*)
+        # Extract tool name after "Launch: <icon> "
+        TOOL_NAME=$(echo "$CHOICE" | sed 's/.*Launch: [^ ]* //')
+        ACTION=$(jq -r --arg wfid "$ACTIVE_ID" --arg tname "$TOOL_NAME" \
+            '.workflows[] | select(.id == $wfid) | .tools[] | select(.name == $tname) | .action' "$CONFIG_FILE")
+        if [ -n "$ACTION" ] && [ "$ACTION" != "null" ]; then
+            eval "$ACTION"
+        fi
+        ;;
+    *"Add Tool to Current Workflow"*)
+        TOOL_NAME=$(omarchy-menu-input "Tool Display Name (e.g. Insomnia):")
+        [ -z "$TOOL_NAME" ] && exit 0
+        TOOL_ICON=$(omarchy-menu-input "Tool Icon Glyph/Emoji (e.g. 🌐 or 󰖟):")
+        [ -z "$TOOL_ICON" ] && TOOL_ICON="🔧"
+        TOOL_CMD=$(omarchy-menu-input "Command to execute (e.g. insomnia or kitty -e htop):")
+        [ -z "$TOOL_CMD" ] && exit 0
+        
+        TMP=$(mktemp)
+        jq --arg wfid "$ACTIVE_ID" \
+           --arg name "$TOOL_NAME" \
+           --arg icon "$TOOL_ICON" \
+           --arg act "$TOOL_CMD" \
+           '(.workflows[] | select(.id == $wfid) | .tools) += [{"name": $name, "icon": $icon, "action": $act}]' \
+           "$CONFIG_FILE" > "$TMP" && mv "$TMP" "$CONFIG_FILE"
+        notify-send -i preferences-system "Workflow Updated" "Added '$TOOL_NAME' to $ACTIVE_NAME"
+        ;;
+    *"Remove Tool from Current Workflow"*)
+        if [ ${#TOOL_NAMES[@]} -eq 0 ]; then
+            notify-send -i dialog-warning "Workflow" "No tools available in current workflow to remove."
+            exit 0
+        fi
+        RM_OPTIONS=()
+        for i in "${!TOOL_NAMES[@]}"; do
+            RM_OPTIONS+=("${TOOL_ICONS[$i]} ${TOOL_NAMES[$i]}")
+        done
+        TOOL_TO_RM=$(omarchy-menu-select "Select Tool to Remove" "${RM_OPTIONS[@]}")
+        if [ -n "$TOOL_TO_RM" ]; then
+            NAME_ONLY=$(echo "$TOOL_TO_RM" | sed 's/^[^ ]* //')
+            TMP=$(mktemp)
+            jq --arg wfid "$ACTIVE_ID" --arg name "$NAME_ONLY" \
+               '(.workflows[] | select(.id == $wfid) | .tools) |= map(select(.name != $name))' \
+               "$CONFIG_FILE" > "$TMP" && mv "$TMP" "$CONFIG_FILE"
+            notify-send -i preferences-system "Workflow Updated" "Removed '$NAME_ONLY' from $ACTIVE_NAME"
+        fi
+        ;;
+    *"Create New Workflow"*)
+        NEW_ID=$(omarchy-menu-input "New Workflow ID (e.g. mobile-dev):" | tr '[:upper:]' '[:lower:]' | tr ' ' '-')
+        [ -z "$NEW_ID" ] && exit 0
+        NEW_NAME=$(omarchy-menu-input "Workflow Title (e.g. Mobile Development):")
+        [ -z "$NEW_NAME" ] && NEW_NAME="$NEW_ID"
+        NEW_ICON=$(omarchy-menu-input "Workflow Icon Glyph/Emoji (e.g. 📱 or 󰄪):")
+        [ -z "$NEW_ICON" ] && NEW_ICON="🚀"
+        NEW_DESC=$(omarchy-menu-input "Short Description:")
+        
+        TMP=$(mktemp)
+        jq --arg id "$NEW_ID" \
+           --arg name "$NEW_NAME" \
+           --arg icon "$NEW_ICON" \
+           --arg desc "$NEW_DESC" \
+           '.workflows += [{"id": $id, "name": $name, "icon": $icon, "description": $desc, "tools": []}]' \
+           "$CONFIG_FILE" > "$TMP" && mv "$TMP" "$CONFIG_FILE"
+        omarchy-workflow set "$NEW_ID"
+        notify-send -i preferences-system "Workflow Created" "Created and activated '$NEW_NAME'!"
+        ;;
+    *"Delete a Workflow"*)
+        mapfile -t DEL_IDS < <(jq -r '.workflows[].id' "$CONFIG_FILE")
+        mapfile -t DEL_NAMES < <(jq -r '.workflows[].name' "$CONFIG_FILE")
+        DEL_OPTIONS=()
+        for i in "${!DEL_IDS[@]}"; do
+            DEL_OPTIONS+=("${DEL_NAMES[$i]} (${DEL_IDS[$i]})")
+        done
+        CHOSEN_DEL=$(omarchy-menu-select "Select Workflow to Delete" "${DEL_OPTIONS[@]}")
+        if [ -n "$CHOSEN_DEL" ]; then
+            DEL_ID=$(echo "$CHOSEN_DEL" | sed -n 's/.*(\(.*\))/\1/p')
+            if [ "$DEL_ID" = "$ACTIVE_ID" ]; then
+                notify-send -i dialog-warning "Cannot Delete" "Switch to a different workflow before deleting the active one."
+                exit 0
+            fi
+            TMP=$(mktemp)
+            jq --arg id "$DEL_ID" '.workflows |= map(select(.id != $id))' "$CONFIG_FILE" > "$TMP" && mv "$TMP" "$CONFIG_FILE"
+            notify-send -i preferences-system "Workflow Deleted" "Removed workflow '$DEL_ID'."
+        fi
+        ;;
+    *"Edit Workflows JSON File"*)
+        omarchy-launch-or-focus-tui nvim "$CONFIG_FILE"
+        ;;
+esac

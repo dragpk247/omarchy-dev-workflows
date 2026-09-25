@@ -1,0 +1,84 @@
+#!/bin/bash
+# omarchy-workflow: CLI engine for dev workflows management
+
+CONFIG_FILE="${XDG_STATE_HOME:-$HOME/.local/state}/omarchy/settings/dev-workflows.json"
+
+if [ ! -f "$CONFIG_FILE" ]; then
+    echo "Configuration file not found: $CONFIG_FILE" >&2
+    exit 1
+fi
+
+get_active_id() {
+    jq -r '.active_workflow // "ai-assisted"' "$CONFIG_FILE"
+}
+
+get_active_name() {
+    local aid
+    aid=$(get_active_id)
+    jq -r --arg id "$aid" '.workflows[] | select(.id == $id) | .name' "$CONFIG_FILE"
+}
+
+get_active_icon() {
+    local aid
+    aid=$(get_active_id)
+    jq -r --arg id "$aid" '.workflows[] | select(.id == $id) | .icon' "$CONFIG_FILE"
+}
+
+set_active() {
+    local target_id="$1"
+    if jq -e --arg id "$target_id" '.workflows[] | select(.id == $id)' "$CONFIG_FILE" >/dev/null 2>&1; then
+        local tmp
+        tmp=$(mktemp)
+        jq --arg id "$target_id" '.active_workflow = $id' "$CONFIG_FILE" > "$tmp" && mv "$tmp" "$CONFIG_FILE"
+        local name
+        name=$(get_active_name)
+        local icon
+        icon=$(get_active_icon)
+        notify-send -i preferences-system "Dev Workflow Switched" "Active workflow: $icon $name"
+        echo "Active workflow switched to: $name ($target_id)"
+    else
+        echo "Workflow ID not found: $target_id" >&2
+        exit 1
+    fi
+}
+
+list_workflows() {
+    local active
+    active=$(get_active_id)
+    jq -r --arg active "$active" '.workflows[] | (if .id == $active then "* " else "  " end) + .icon + " " + .name + " (" + .id + ")"' "$CONFIG_FILE"
+}
+
+case "${1:-status}" in
+    get-icon)
+        get_active_icon
+        ;;
+    get-name)
+        get_active_name
+        ;;
+    get-id)
+        get_active_id
+        ;;
+    set)
+        if [ -z "$2" ]; then
+            echo "Usage: $0 set <workflow-id>" >&2
+            exit 1
+        fi
+        set_active "$2"
+        ;;
+    list)
+        list_workflows
+        ;;
+    status)
+        echo "Active Workflow: $(get_active_icon) $(get_active_name) ($(get_active_id))"
+        echo ""
+        echo "Available Workflows:"
+        list_workflows
+        ;;
+    menu)
+        exec omarchy-workflow-menu
+        ;;
+    *)
+        echo "Usage: $0 [status|get-icon|get-name|get-id|set <id>|list|menu]"
+        exit 1
+        ;;
+esac

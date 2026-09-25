@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "user.dev-workflows",
+  "name": "Dev Workflows",
+  "version": "1.0.0",
+  "author": "dragpk247",
+  "description": "Switch development workflows and launch tailored tools directly from the bar",
+  "kinds": [
+    "bar-widget"
+  ],
+  "entryPoints": {
+    "barWidget": "BarWidget.qml"
+  },
+  "barWidget": {
+    "displayName": "Dev Workflows",
+    "description": "Switch dev workflows and launch skill-based tool stacks",
+    "category": "Development",
+    "allowMultiple": false
+  }
+}
