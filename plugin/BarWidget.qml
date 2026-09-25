@@ -8,7 +8,7 @@ BarWidget {
   id: root
   moduleName: "user.dev-workflows"
 
-  property string activeIcon: "󰚩"
+  property string activeIcon: "󰑮"
   property string activeName: "AI-Assisted Prototyping"
 
   function refresh() {

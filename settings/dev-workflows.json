@@ -4,32 +4,32 @@
     {
       "id": "ai-assisted",
       "name": "AI-Assisted Prototyping",
-      "icon": "󰚩",
+      "icon": "\udb81\udc6e",
       "description": "Antigravity, Claude Code, Ollama, Dropdown Kitty",
       "tools": [
         {
           "name": "Antigravity (agy)",
-          "icon": "🤖",
+          "icon": "\ud83e\udd16",
           "action": "omarchy-launch-or-focus agy 'kitty --title agy -e agy'"
         },
         {
           "name": "Claude Code",
-          "icon": "⚡",
+          "icon": "\u26a1",
           "action": "omarchy-launch-or-focus claude 'kitty --title claude -e claude'"
         },
         {
           "name": "Codex CLI",
-          "icon": "💻",
+          "icon": "\ud83d\udcbb",
           "action": "omarchy-launch-or-focus codex 'kitty --title codex -e codex'"
         },
         {
           "name": "Ollama Chat",
-          "icon": "🦙",
+          "icon": "\ud83e\udd99",
           "action": "setsid kitty --title 'Ollama Chat' -e ollama run llama3 >/dev/null 2>&1 &"
         },
         {
           "name": "Dropdown Scratchpad",
-          "icon": "",
+          "icon": "\uf489",
           "action": "toggle-dropdown-terminal"
         }
       ]
@@ -37,32 +37,32 @@
     {
       "id": "fullstack-web",
       "name": "Full-Stack Web & Cloud",
-      "icon": "󰖟",
+      "icon": "\udb81\udd9f",
       "description": "Neovim, Tmux, Lazygit, Docker, Node/Mise",
       "tools": [
         {
           "name": "Neovim Editor",
-          "icon": "",
+          "icon": "\ue6ae",
           "action": "omarchy-launch-or-focus nvim 'kitty --title nvim -e nvim'"
         },
         {
           "name": "Tmux Workspace",
-          "icon": "",
+          "icon": "\uf489",
           "action": "omarchy-launch-or-focus tmux-dev 'kitty --title tmux-dev -e tmux new-session -A -s dev'"
         },
         {
           "name": "Lazygit Git Client",
-          "icon": "󰊢",
+          "icon": "\udb80\udea2",
           "action": "omarchy-launch-or-focus lazygit 'kitty --title lazygit -e lazygit'"
         },
         {
           "name": "Project Switcher (fzf)",
-          "icon": "",
+          "icon": "\uf002",
           "action": "project-switcher"
         },
         {
           "name": "Docker Status & Containers",
-          "icon": "󰡨",
+          "icon": "\udb82\udc68",
           "action": "setsid kitty --title 'Docker Containers' -e bash -c 'docker ps; exec bash' >/dev/null 2>&1 &"
         }
       ]
@@ -70,32 +70,32 @@
     {
       "id": "systems-performance",
       "name": "Systems & Performance",
-      "icon": "󰅟",
+      "icon": "\udb80\udd5f",
       "description": "Rust, Btop, Systemd Logs, Hyprland Config",
       "tools": [
         {
           "name": "Btop System Monitor",
-          "icon": "󰄪",
+          "icon": "\udb80\udd2a",
           "action": "omarchy-launch-or-focus btop 'kitty --title btop -e btop'"
         },
         {
           "name": "Hyprland Config Editor",
-          "icon": "",
+          "icon": "\uf359",
           "action": "omarchy-launch-or-focus-tui nvim ~/.config/hypr/bindings.lua"
         },
         {
           "name": "Journalctl System Logs",
-          "icon": "📜",
+          "icon": "\ud83d\udcdc",
           "action": "setsid kitty --title 'System Logs' -e journalctl --user -f >/dev/null 2>&1 &"
         },
         {
           "name": "ASUS Power Profile Cycle",
-          "icon": "⚡",
+          "icon": "\u26a1",
           "action": "asus-profile-toggle"
         },
         {
           "name": "ASUS Battery Limit Toggle",
-          "icon": "🔋",
+          "icon": "\ud83d\udd0b",
           "action": "asus-battery-toggle"
         }
       ]
