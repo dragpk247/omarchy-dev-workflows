@@ -4,98 +4,156 @@
     {
       "id": "ai-assisted",
       "name": "AI-Assisted Prototyping",
-      "icon": "\udb81\udc6e",
-      "description": "Antigravity, Claude Code, Ollama, Dropdown Kitty",
+      "icon": "󰑮",
+      "description": "Antigravity, Claude Code, OpenCode, Codex, Ollama, Hunk Diff",
       "tools": [
         {
           "name": "Antigravity (agy)",
-          "icon": "\ud83e\udd16",
+          "icon": "🤖",
           "action": "omarchy-launch-or-focus agy 'kitty --title agy -e agy'"
         },
         {
           "name": "Claude Code",
-          "icon": "\u26a1",
+          "icon": "⚡",
           "action": "omarchy-launch-or-focus claude 'kitty --title claude -e claude'"
         },
         {
+          "name": "OpenCode AI",
+          "icon": "✨",
+          "action": "omarchy-launch-or-focus opencode 'kitty --title opencode -e opencode'"
+        },
+        {
           "name": "Codex CLI",
-          "icon": "\ud83d\udcbb",
+          "icon": "💻",
           "action": "omarchy-launch-or-focus codex 'kitty --title codex -e codex'"
         },
         {
+          "name": "Live Diff Watcher (hunk)",
+          "icon": "󰊢",
+          "action": "omarchy-launch-or-focus hunk-diff 'kitty --title hunk-diff -e hunk diff --watch'"
+        },
+        {
           "name": "Ollama Chat",
-          "icon": "\ud83e\udd99",
+          "icon": "🦙",
           "action": "setsid kitty --title 'Ollama Chat' -e ollama run llama3 >/dev/null 2>&1 &"
         },
         {
           "name": "Dropdown Scratchpad",
-          "icon": "\uf489",
+          "icon": "",
           "action": "toggle-dropdown-terminal"
+        }
+      ]
+    },
+    {
+      "id": "herdr-prototyping",
+      "name": "Herdr Swarms & Prototyping",
+      "icon": "󰢹",
+      "description": "Herdr Workspaces, Multi-Agent Swarms, Worktrees, Hunk Diff",
+      "tools": [
+        {
+          "name": "Herdr Workspace",
+          "icon": "",
+          "action": "omarchy-launch-or-focus herdr 'kitty --title herdr -e herdr'"
+        },
+        {
+          "name": "Herdr Dev Square (hds)",
+          "icon": "⊞",
+          "action": "omarchy-launch-or-focus herdr-hds 'kitty --title herdr -e bash -ic \"herdr && hds\"'"
+        },
+        {
+          "name": "Dual AI Layout (hdl agy claude)",
+          "icon": "👥",
+          "action": "omarchy-launch-or-focus herdr-hdl 'kitty --title herdr -e bash -ic \"herdr && hdl agy claude\"'"
+        },
+        {
+          "name": "4-Agent Swarm (hsl 4 agy)",
+          "icon": "🐝",
+          "action": "omarchy-launch-or-focus herdr-hsl 'kitty --title herdr -e bash -ic \"herdr && hsl 4 agy\"'"
+        },
+        {
+          "name": "Git Worktree Manager",
+          "icon": "🌱",
+          "action": "omarchy-launch-or-focus herdr-worktree 'kitty --title herdr-worktree -e bash -c \"herdr worktree list; exec bash\"'"
+        },
+        {
+          "name": "Live Diff Watcher (hunk)",
+          "icon": "󰊢",
+          "action": "omarchy-launch-or-focus hunk-diff 'kitty --title hunk-diff -e hunk diff --watch'"
         }
       ]
     },
     {
       "id": "fullstack-web",
       "name": "Full-Stack Web & Cloud",
-      "icon": "\udb81\udd9f",
-      "description": "Neovim, Tmux, Lazygit, Docker, Node/Mise",
+      "icon": "󰖟",
+      "description": "Neovim, Tmux, Lazygit, Lazydocker, Node/Mise",
       "tools": [
         {
           "name": "Neovim Editor",
-          "icon": "\ue6ae",
+          "icon": "",
           "action": "omarchy-launch-or-focus nvim 'kitty --title nvim -e nvim'"
         },
         {
           "name": "Tmux Workspace",
-          "icon": "\uf489",
+          "icon": "",
           "action": "omarchy-launch-or-focus tmux-dev 'kitty --title tmux-dev -e tmux new-session -A -s dev'"
         },
         {
           "name": "Lazygit Git Client",
-          "icon": "\udb80\udea2",
+          "icon": "󰊢",
           "action": "omarchy-launch-or-focus lazygit 'kitty --title lazygit -e lazygit'"
         },
         {
-          "name": "Project Switcher (fzf)",
-          "icon": "\uf002",
-          "action": "project-switcher"
+          "name": "Lazydocker TUI",
+          "icon": "󰡨",
+          "action": "omarchy-launch-or-focus lazydocker 'kitty --title lazydocker -e lazydocker'"
         },
         {
-          "name": "Docker Status & Containers",
-          "icon": "\udb82\udc68",
-          "action": "setsid kitty --title 'Docker Containers' -e bash -c 'docker ps; exec bash' >/dev/null 2>&1 &"
+          "name": "Live Diff Watcher (hunk)",
+          "icon": "󰊢",
+          "action": "omarchy-launch-or-focus hunk-diff 'kitty --title hunk-diff -e hunk diff --watch'"
+        },
+        {
+          "name": "Project Switcher (fzf)",
+          "icon": "",
+          "action": "project-switcher"
         }
       ]
     },
     {
       "id": "systems-performance",
       "name": "Systems & Performance",
-      "icon": "\udb80\udd5f",
-      "description": "Rust, Btop, Systemd Logs, Hyprland Config",
+      "icon": "󰅟",
+      "description": "Rust, Btop, Systemd Logs, Hyprland Config, GPU Profile",
       "tools": [
         {
           "name": "Btop System Monitor",
-          "icon": "\udb80\udd2a",
+          "icon": "󰄪",
           "action": "omarchy-launch-or-focus btop 'kitty --title btop -e btop'"
         },
         {
           "name": "Hyprland Config Editor",
-          "icon": "\uf359",
+          "icon": "",
           "action": "omarchy-launch-or-focus-tui nvim ~/.config/hypr/bindings.lua"
         },
         {
           "name": "Journalctl System Logs",
-          "icon": "\ud83d\udcdc",
+          "icon": "📜",
           "action": "setsid kitty --title 'System Logs' -e journalctl --user -f >/dev/null 2>&1 &"
         },
         {
+          "name": "GPU Mode Switcher (iGPU / dGPU)",
+          "icon": "󰢮",
+          "action": "gpu-profile-switch"
+        },
+        {
           "name": "ASUS Power Profile Cycle",
-          "icon": "\u26a1",
+          "icon": "⚡",
           "action": "asus-profile-toggle"
         },
         {
           "name": "ASUS Battery Limit Toggle",
-          "icon": "\ud83d\udd0b",
+          "icon": "🔋",
           "action": "asus-battery-toggle"
         }
       ]

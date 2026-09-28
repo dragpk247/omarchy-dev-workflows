@@ -25,19 +25,30 @@ Switch between skill-tailored development workflows (AI Prototyping, Full-Stack 
 1. **🤖 AI-Assisted Prototyping (`ai-assisted`)**:
    - Antigravity CLI (`agy`)
    - Claude Code (`claude`)
+   - OpenCode AI (`opencode`)
    - Codex CLI (`codex`)
+   - Live Diff Watcher (`hunk diff --watch`)
    - Ollama Local AI Chat (`ollama`)
    - Dropdown Kitty Scratchpad
-2. **🌐 Full-Stack Web & Cloud (`fullstack-web`)**:
+2. **󰢹 Herdr Swarms & Prototyping (`herdr-prototyping`)**:
+   - Herdr Persistent Workspace (`herdr`)
+   - Herdr Dev Square (`hds` - Neovim + Hunk Watch + OpenCode + Terminal)
+   - Dual AI Review Layout (`hdl agy claude`)
+   - 4-Agent Swarm Grid (`hsl 4 agy`)
+   - Git Worktree Manager (`herdr worktree list`)
+   - Live Diff Watcher (`hunk diff --watch`)
+3. **🌐 Full-Stack Web & Cloud (`fullstack-web`)**:
    - Neovim (`nvim`)
    - Tmux Dev Workspace (`tmux`)
    - Lazygit Client (`lazygit`)
+   - Lazydocker TUI (`lazydocker`)
+   - Live Diff Watcher (`hunk diff --watch`)
    - Project Workspace Switcher (`fzf`)
-   - Docker Container Status (`docker`)
-3. **⚙️ Systems & Performance (`systems-performance`)**:
+4. **⚙️ Systems & Performance (`systems-performance`)**:
    - Btop Resource Monitor (`btop`)
    - Hyprland Config Editor
    - Live System Journal (`journalctl`)
+   - GPU Mode Switcher (`gpu-profile-switch` - iGPU / dGPU)
    - ASUS Fan & Power Profile Switcher
    - ASUS Battery Threshold Limit Toggle
 
