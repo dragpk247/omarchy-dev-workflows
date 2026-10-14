@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+notify() {
+  notify-send -a "Git Workflow" -i "git" "$1" "${2:-}"
+}
+
+# Scan Projects, home, and Documents, sorting by most recently updated/committed first
+REPOS=$(python3 -c "
+import os, subprocess
+
+dirs = [os.path.expanduser('~/Projects'), os.path.expanduser('~/projects'), os.path.expanduser('~/Documents'), os.path.expanduser('~')]
+repos = []
+seen = set()
+
+for d in dirs:
+    if not os.path.isdir(d): continue
+    for root, subdirs, files in os.walk(d):
+        if any(ign in root for ign in ['/.cache', '/.local', '/.grok', '/.hermes']):
+            continue
+        rel = os.path.relpath(root, d)
+        depth = len(rel.split(os.sep)) if rel != '.' else 0
+        if depth > 3:
+            subdirs.clear()
+            continue
+        if '.git' in subdirs:
+            if root not in seen:
+                seen.add(root)
+                ts = 0
+                try:
+                    res = subprocess.run(['git', '-C', root, 'log', '-1', '--format=%ct'], capture_output=True, text=True, timeout=1)
+                    if res.returncode == 0 and res.stdout.strip().isdigit():
+                        ts = int(res.stdout.strip())
+                    else:
+                        ts = int(os.path.getmtime(root))
+                except Exception:
+                    ts = int(os.path.getmtime(root))
+                repos.append((ts, root))
+
+repos.sort(key=lambda x: x[0], reverse=True)
+for ts, r in repos:
+    print(r)
+")
+
+if command -v omarchy-menu-select >/dev/null 2>&1; then
+  CHOICE=$(echo "$REPOS" | omarchy-menu-select "Select Git Project to Open" || true)
+  if [[ -n "$CHOICE" && -d "$CHOICE" ]]; then
+    xdg-terminal-exec --dir="$CHOICE" bash -c "echo -e '\033[1;32mSwitched to: $CHOICE\033[0m\n'; git status; exec bash" &
+  fi
+else
+  xdg-terminal-exec --dir="$HOME/Projects" &
+fi

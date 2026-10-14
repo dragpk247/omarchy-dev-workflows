@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Helper to show desktop notifications
+notify() {
+  notify-send -a "Git Workflow" -i "git" "$1" "${2:-}"
+}
+
+prompt_input() {
+  local prompt_text="$1"
+  if command -v omarchy-menu-input >/dev/null 2>&1; then
+    omarchy-menu-input "$prompt_text"
+  else
+    read -rp "$prompt_text: " res
+    echo "$res"
+  fi
+}
+
+REPO_INPUT="${1:-}"
+
+if [[ -z "$REPO_INPUT" ]]; then
+  REPO_INPUT=$(prompt_input "Enter GitHub Repo (e.g. owner/repo or URL)")
+fi
+
+if [[ -z "$REPO_INPUT" ]]; then
+  notify "Git Workflow" "No repository provided. Cancelled."
+  exit 0
+fi
+
+# Clean up repo input if full URL was pasted
+REPO_SLUG=$(echo "$REPO_INPUT" | sed -E 's#^https?://github.com/##; s#\.git$##')
+
+TARGET_DIR="$HOME/projects/open-source/$(basename "$REPO_SLUG")"
+mkdir -p "$HOME/projects/open-source"
+
+notify "Git Workflow" "Forking and cloning $REPO_SLUG..."
+
+if [[ -d "$TARGET_DIR" ]]; then
+  notify "Git Workflow" "Directory already exists: $TARGET_DIR. Opening terminal."
+else
+  cd "$HOME/projects/open-source"
+  if ! gh repo fork "$REPO_SLUG" --clone; then
+    notify "Git Workflow Error" "Failed to fork/clone $REPO_SLUG."
+    exit 1
+  fi
+fi
+
+# Launch terminal in the repo folder with git status
+notify "Git Workflow" "Ready! Opening $REPO_SLUG..."
+xdg-terminal-exec --dir="$TARGET_DIR" bash -c "git status; exec bash" &

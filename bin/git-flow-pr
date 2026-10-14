@@ -1,0 +1,106 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+notify() {
+  notify-send -a "Git Workflow" -i "git" "$1" "${2:-}"
+}
+
+prompt_input() {
+  local prompt_text="$1"
+  if command -v omarchy-menu-input >/dev/null 2>&1; then
+    omarchy-menu-input "$prompt_text"
+  else
+    read -rp "$prompt_text: " res
+    echo "$res"
+  fi
+}
+
+REPO_DIR="${1:-}"
+
+# If not provided, try to find the current active git directory from active terminal or dialog
+if [[ -z "$REPO_DIR" ]]; then
+  if command -v omarchy-cmd-terminal-cwd >/dev/null 2>&1; then
+    CWD=$(omarchy-cmd-terminal-cwd 2>/dev/null || true)
+    if [[ -n "$CWD" && -d "$CWD/.git" ]]; then
+      REPO_DIR="$CWD"
+    fi
+  fi
+fi
+
+  ALL_REPOS=$(python3 -c "
+import os, subprocess
+
+dirs = [os.path.expanduser('~/Projects'), os.path.expanduser('~/projects'), os.path.expanduser('~/Documents'), os.path.expanduser('~')]
+repos = []
+seen = set()
+
+for d in dirs:
+    if not os.path.isdir(d): continue
+    for root, subdirs, files in os.walk(d):
+        if any(ign in root for ign in ['/.cache', '/.local', '/.grok', '/.hermes']):
+            continue
+        rel = os.path.relpath(root, d)
+        depth = len(rel.split(os.sep)) if rel != '.' else 0
+        if depth > 3:
+            subdirs.clear()
+            continue
+        if '.git' in subdirs:
+            if root not in seen:
+                seen.add(root)
+                ts = 0
+                try:
+                    res = subprocess.run(['git', '-C', root, 'log', '-1', '--format=%ct'], capture_output=True, text=True, timeout=1)
+                    if res.returncode == 0 and res.stdout.strip().isdigit():
+                        ts = int(res.stdout.strip())
+                    else:
+                        ts = int(os.path.getmtime(root))
+                except Exception:
+                    ts = int(os.path.getmtime(root))
+                repos.append((ts, root))
+
+repos.sort(key=lambda x: x[0], reverse=True)
+for ts, r in repos:
+    print(r)
+")
+  if command -v omarchy-menu-select >/dev/null 2>&1; then
+    CHOICE=$(echo "$ALL_REPOS" | omarchy-menu-select "Select Git Project to PR" || true)
+    if [[ -n "$CHOICE" ]]; then
+      REPO_DIR="$CHOICE"
+    fi
+  fi
+fi
+
+if [[ -z "$REPO_DIR" || ! -d "$REPO_DIR/.git" ]]; then
+  notify "Git Workflow" "No git repository selected."
+  exit 1
+fi
+
+cd "$REPO_DIR"
+CURRENT_BRANCH=$(git branch --show-current)
+
+if [[ "$CURRENT_BRANCH" == "main" || "$CURRENT_BRANCH" == "master" ]]; then
+  notify "Git Workflow Warning" "You are on $CURRENT_BRANCH. Please create a feature branch before opening a PR."
+  xdg-terminal-exec --dir="$REPO_DIR" bash -c "echo 'Please create a branch: git checkout -b feat/my-change'; exec bash" &
+  exit 1
+fi
+
+TITLE=$(prompt_input "PR Title (for $CURRENT_BRANCH)")
+if [[ -z "$TITLE" ]]; then
+  notify "Git Workflow" "PR creation cancelled (empty title)."
+  exit 0
+fi
+
+BODY=$(prompt_input "PR Description")
+
+notify "Git Workflow" "Pushing branch $CURRENT_BRANCH and opening PR..."
+
+# Push branch to fork
+git push -u origin "$CURRENT_BRANCH"
+
+# Create PR
+PR_URL=$(gh pr create --title "$TITLE" --body "${BODY:-$TITLE}")
+
+notify "Git Workflow Success" "Pull Request Created: $PR_URL"
+
+# Open PR in browser
+xdg-open "$PR_URL" &>/dev/null &
